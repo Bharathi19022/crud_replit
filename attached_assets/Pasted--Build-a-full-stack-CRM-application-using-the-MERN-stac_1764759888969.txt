@@ -1,0 +1,88 @@
+🚀 Build a full-stack CRM application using the MERN stack (MongoDB, Express.js, React, Node.js). This app must allow login using the built-in Replit Auth system. After login, each user should only see their own customer data (multi-tenant SaaS style).
+
+---------------------------------------
+📌 CORE REQUIREMENTS
+---------------------------------------
+
+1️⃣ Authentication
+- Use Replit Auth (do NOT build your own auth).
+- When a user logs in, store their user ID.
+- All database records must be linked to the authenticated user.
+
+2️⃣ CRM Module
+Create CRUD (Create, Read, Update, Delete) functionality for managing Customers with following fields:
+
+- Customer Name (text)
+- Email (text)
+- Phone (text)
+- Company (optional)
+- Status (Lead, Active, Inactive)
+
+Validation:
+- Email must be unique per user.
+
+3️⃣ Database (MongoDB or Replit DB if Mongo unavailable)
+- Each customer record must include:  
+  {
+     name,
+     email,
+     phone,
+     company,
+     status,
+     userId (from Replit Auth),
+     createdAt,
+     updatedAt
+  }
+
+4️⃣ Backend (Express.js)
+- REST API routes:
+  - POST /api/customers
+  - GET /api/customers
+  - GET /api/customers/:id
+  - PUT /api/customers/:id
+  - DELETE /api/customers/:id
+
+- Middleware to protect routes based on logged-in user.
+
+5️⃣ Frontend (React)
+- Pages:
+  🔹 Login Page (auto redirect using Replit Auth)
+  🔹 Dashboard
+  🔹 Customer List page
+  🔹 Add/Edit Customer form
+
+- Use Material UI OR Tailwind for styling.
+
+- CRUD UI Requirements:
+  - Users must be able to add customers via a form.
+  - Display customers in a table (sortable + basic search).
+  - Edit & Delete buttons for each row.
+
+6️⃣ UI/UX (for both Browser + VNC Desktop Preview)
+- Responsive layout.
+- Simple sidebar to navigate:
+  - Dashboard
+  - Customers
+  - Logout
+
+7️⃣ Bonus (optional if time):
+- Toast popups for success/error messages.
+- Confirmation modal before deleting a customer.
+
+---------------------------------------
+🔥 FINAL REQUIREMENTS
+---------------------------------------
+
+Once built, automatically:
+
+- Run the server, ensure CORS is enabled.
+- Connect frontend to backend using axios.
+- Push a working full build that runs both frontend + backend in Replit.
+- Provide clear instructions in README:  
+  - How to run
+  - How login works with Replit Auth
+  - Where to test CRUD
+
+---------------------------------------
+END.
+---------------------------------------
