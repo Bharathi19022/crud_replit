@@ -1,85 +1,65 @@
-import { sql, relations } from 'drizzle-orm';
-import {
-  index,
-  jsonb,
-  pgTable,
-  timestamp,
-  varchar,
-  pgEnum,
-  unique,
-} from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import mongoose, { Schema, Document } from 'mongoose';
 import { z } from "zod";
 
 // Customer status enum
-export const customerStatusEnum = pgEnum('customer_status', ['Lead', 'Active', 'Inactive']);
+export const customerStatusEnum = ['Lead', 'Active', 'Inactive'] as const;
 
-// Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
+// User interface and model
+export interface IUser extends Document {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+const userSchema = new Schema<IUser>({
+  email: { type: String, unique: true, sparse: true },
+  firstName: String,
+  lastName: String,
+  profileImageUrl: String,
+}, {
+  timestamps: true,
 });
 
-// Customer table for CRM
-export const customers = pgTable(
-  "customers",
-  {
-    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-    userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-    name: varchar("name", { length: 255 }).notNull(),
-    email: varchar("email", { length: 255 }).notNull(),
-    phone: varchar("phone", { length: 50 }),
-    company: varchar("company", { length: 255 }),
-    status: customerStatusEnum("status").notNull().default('Lead'),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
+export const User = mongoose.model<IUser>('User', userSchema);
+
+// Customer interface and model
+export interface ICustomer extends Document {
+  userId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  status: typeof customerStatusEnum[number];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const customerSchema = new Schema<ICustomer>({
+  userId: { type: String, required: true, ref: 'User', index: true },
+  name: { type: String, required: true, maxlength: 255 },
+  email: { type: String, required: true, maxlength: 255 },
+  phone: { type: String, maxlength: 50 },
+  company: { type: String, maxlength: 255 },
+  status: {
+    type: String,
+    enum: customerStatusEnum,
+    default: 'Lead',
+    required: true
   },
-  (table) => [
-    index("IDX_customer_user_id").on(table.userId),
-    unique("unique_email_per_user").on(table.email, table.userId),
-  ],
-);
+}, {
+  timestamps: true,
+});
 
-// Relations
-export const usersRelations = relations(users, ({ many }) => ({
-  customers: many(customers),
-}));
+// Unique constraint on email per user
+customerSchema.index({ email: 1, userId: 1 }, { unique: true });
 
-export const customersRelations = relations(customers, ({ one }) => ({
-  user: one(users, {
-    fields: [customers.userId],
-    references: [users.id],
-  }),
-}));
+export const Customer = mongoose.model<ICustomer>('Customer', customerSchema);
 
-// Schemas and Types
-export type UpsertUser = typeof users.$inferInsert;
-export type User = typeof users.$inferSelect;
-
-export const insertCustomerSchema = createInsertSchema(customers).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
+// Zod schemas for validation
+export const insertCustomerSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   email: z.string().email("Invalid email address").max(255),
   phone: z.string().max(50).optional().nullable(),
@@ -88,4 +68,4 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
 });
 
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
-export type Customer = typeof customers.$inferSelect;
+export type UpsertUser = Partial<IUser>;

@@ -1,120 +1,77 @@
-import {
-  users,
-  customers,
-  type User,
-  type UpsertUser,
-  type Customer,
-  type InsertCustomer,
-} from "@shared/schema";
-import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { User, Customer, IUser, ICustomer, InsertCustomer, UpsertUser } from "@shared/schema";
 
 // Interface for storage operations
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
-  
+  getUser(id: string): Promise<IUser | null>;
+  upsertUser(user: UpsertUser & { _id?: string }): Promise<IUser>;
+
   // Customer operations
-  getCustomersByUserId(userId: string): Promise<Customer[]>;
-  getCustomerById(id: string, userId: string): Promise<Customer | undefined>;
-  createCustomer(customer: InsertCustomer & { userId: string }): Promise<Customer>;
-  updateCustomer(id: string, userId: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  getCustomersByUserId(userId: string): Promise<ICustomer[]>;
+  getCustomerById(id: string, userId: string): Promise<ICustomer | null>;
+  createCustomer(customer: InsertCustomer & { userId: string }): Promise<ICustomer>;
+  updateCustomer(id: string, userId: string, customer: Partial<InsertCustomer>): Promise<ICustomer | null>;
   deleteCustomer(id: string, userId: string): Promise<boolean>;
   isEmailUniqueForUser(email: string, userId: string, excludeId?: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (mandatory for Replit Auth)
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+  // User operations
+  async getUser(id: string): Promise<IUser | null> {
+    return await User.findById(id);
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+  async upsertUser(userData: UpsertUser & { _id?: string }): Promise<IUser> {
+    if (userData._id) {
+      const user = await User.findByIdAndUpdate(
+        userData._id,
+        { ...userData, updatedAt: new Date() },
+        { new: true, upsert: true }
+      );
+      return user!;
+    } else {
+      const user = new User(userData);
+      await user.save();
+      return user;
+    }
   }
 
   // Customer operations
-  async getCustomersByUserId(userId: string): Promise<Customer[]> {
-    return await db
-      .select()
-      .from(customers)
-      .where(eq(customers.userId, userId))
-      .orderBy(desc(customers.createdAt));
+  async getCustomersByUserId(userId: string): Promise<ICustomer[]> {
+    return await Customer.find({ userId }).sort({ createdAt: -1 });
   }
 
-  async getCustomerById(id: string, userId: string): Promise<Customer | undefined> {
-    const [customer] = await db
-      .select()
-      .from(customers)
-      .where(and(eq(customers.id, id), eq(customers.userId, userId)));
+  async getCustomerById(id: string, userId: string): Promise<ICustomer | null> {
+    return await Customer.findOne({ _id: id, userId });
+  }
+
+  async createCustomer(customerData: InsertCustomer & { userId: string }): Promise<ICustomer> {
+    const customer = new Customer(customerData);
+    await customer.save();
     return customer;
   }
 
-  async createCustomer(customerData: InsertCustomer & { userId: string }): Promise<Customer> {
-    const [customer] = await db
-      .insert(customers)
-      .values({
-        ...customerData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    return customer;
-  }
-
-  async updateCustomer(id: string, userId: string, customerData: Partial<InsertCustomer>): Promise<Customer | undefined> {
-    const [customer] = await db
-      .update(customers)
-      .set({
-        ...customerData,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(customers.id, id), eq(customers.userId, userId)))
-      .returning();
-    return customer;
+  async updateCustomer(id: string, userId: string, customerData: Partial<InsertCustomer>): Promise<ICustomer | null> {
+    return await Customer.findOneAndUpdate(
+      { _id: id, userId },
+      { ...customerData, updatedAt: new Date() },
+      { new: true }
+    );
   }
 
   async deleteCustomer(id: string, userId: string): Promise<boolean> {
-    const result = await db
-      .delete(customers)
-      .where(and(eq(customers.id, id), eq(customers.userId, userId)))
-      .returning();
-    return result.length > 0;
+    const result = await Customer.deleteOne({ _id: id, userId });
+    return result.deletedCount === 1;
   }
 
   async isEmailUniqueForUser(email: string, userId: string, excludeId?: string): Promise<boolean> {
-    const query = excludeId 
-      ? and(
-          eq(customers.email, email), 
-          eq(customers.userId, userId),
-          eq(customers.id, excludeId) // This will NOT match (we want different IDs)
-        )
-      : and(eq(customers.email, email), eq(customers.userId, userId));
-    
-    const existing = await db
-      .select()
-      .from(customers)
-      .where(and(eq(customers.email, email), eq(customers.userId, userId)));
-    
-    // If we're excluding an ID (update case), check if any matching email belongs to a different customer
+    const query: any = { email, userId };
     if (excludeId) {
-      return existing.length === 0 || (existing.length === 1 && existing[0].id === excludeId);
+      query._id = { $ne: excludeId };
     }
-    
-    return existing.length === 0;
+
+    const existing = await Customer.findOne(query);
+    return !existing;
   }
 }
 
