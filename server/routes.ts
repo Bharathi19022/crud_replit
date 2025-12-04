@@ -3,6 +3,18 @@ import type { Server as HTTPServer } from "http";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { storage } from "./storage";
 import { connectDB } from "./db";
+import { z } from "zod";
+
+// Define Zod schemas for request validation
+const insertCustomerSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email format"),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  status: z.enum(["active", "inactive", "lead", "contacted"]),
+});
+
+const updateCustomerSchema = insertCustomerSchema.partial(); // Allow partial updates
 
 export async function registerRoutes(
   httpServer: HTTPServer,
@@ -113,7 +125,7 @@ export async function registerRoutes(
       }
 
       // Validate request body
-      const validationResult = insertCustomerSchema.safeParse(req.body);
+      const validationResult = updateCustomerSchema.safeParse(req.body);
       if (!validationResult.success) {
         return res.status(400).json({ 
           message: "Validation error", 

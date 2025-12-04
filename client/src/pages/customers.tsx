@@ -25,12 +25,12 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { CustomerForm } from "@/components/customer-form";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { 
-  Plus, 
-  Search, 
-  Pencil, 
-  Trash2, 
-  Users, 
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Users,
   ArrowUpDown,
   Building2,
   Mail,
@@ -164,7 +164,7 @@ export default function Customers() {
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(c => 
+      result = result.filter(c =>
         c.name.toLowerCase().includes(query) ||
         c.email.toLowerCase().includes(query) ||
         c.company?.toLowerCase().includes(query) ||
@@ -201,7 +201,7 @@ export default function Customers() {
       }
 
       if (aVal === null || bVal === null) return 0;
-      
+
       if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
       return 0;
@@ -309,7 +309,7 @@ export default function Customers() {
               <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-1">No customers found</h3>
               <p className="text-muted-foreground mb-4">
-                {searchQuery || statusFilter !== 'all' 
+                {searchQuery || statusFilter !== 'all'
                   ? "Try adjusting your search or filters"
                   : "Get started by adding your first customer"}
               </p>
@@ -325,7 +325,7 @@ export default function Customers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead 
+                    <TableHead
                       className="cursor-pointer hover-elevate"
                       onClick={() => handleSort('name')}
                       data-testid="table-header-name"
@@ -335,7 +335,7 @@ export default function Customers() {
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </TableHead>
-                    <TableHead 
+                    <TableHead
                       className="cursor-pointer hover-elevate"
                       onClick={() => handleSort('email')}
                       data-testid="table-header-email"
@@ -346,7 +346,7 @@ export default function Customers() {
                       </div>
                     </TableHead>
                     <TableHead className="hidden md:table-cell">Phone</TableHead>
-                    <TableHead 
+                    <TableHead
                       className="hidden lg:table-cell cursor-pointer hover-elevate"
                       onClick={() => handleSort('company')}
                       data-testid="table-header-company"
@@ -356,7 +356,7 @@ export default function Customers() {
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </TableHead>
-                    <TableHead 
+                    <TableHead
                       className="cursor-pointer hover-elevate"
                       onClick={() => handleSort('status')}
                       data-testid="table-header-status"
@@ -371,8 +371,8 @@ export default function Customers() {
                 </TableHeader>
                 <TableBody>
                   {filteredAndSortedCustomers.map((customer) => (
-                    <TableRow 
-                      key={customer.id} 
+                    <TableRow
+                      key={customer.id}
                       className="hover-elevate"
                       data-testid={`row-customer-${customer.id}`}
                     >
@@ -499,8 +499,8 @@ function StatusBadge({ status, customerId }: { status: string; customerId: strin
   };
 
   return (
-    <Badge 
-      variant="outline" 
+    <Badge
+      variant="outline"
       className={`${styles[status]} font-medium`}
       data-testid={`badge-status-${customerId}`}
     >

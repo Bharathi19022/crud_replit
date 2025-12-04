@@ -36,12 +36,12 @@ export function DeleteConfirmDialog({
             <AlertDialogTitle>Delete Customer</AlertDialogTitle>
           </div>
           <AlertDialogDescription>
-            Are you sure you want to delete <span className="font-medium text-foreground">{customerName}</span>? 
+            Are you sure you want to delete <span className="font-medium text-foreground">{customerName}</span>?
             This action cannot be undone and all associated data will be permanently removed.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel 
+          <AlertDialogCancel
             disabled={isPending}
             data-testid="button-cancel-delete"
           >
