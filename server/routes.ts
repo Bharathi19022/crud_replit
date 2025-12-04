@@ -1,13 +1,15 @@
 import type { Express } from "express";
-import { type Server } from "http";
-import { storage } from "./storage";
+import type { Server as HTTPServer } from "http";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertCustomerSchema } from "@shared/schema";
+import { storage } from "./storage";
+import { connectDB } from "./db";
 
 export async function registerRoutes(
-  httpServer: Server,
+  httpServer: HTTPServer,
   app: Express
-): Promise<Server> {
+): Promise<HTTPServer> {
+  // Initialize MongoDB connection before setting up routes
+  await connectDB();
   // Setup Replit Auth
   await setupAuth(app);
 
@@ -45,12 +47,12 @@ export async function registerRoutes(
     try {
       const userId = req.user.claims.sub;
       const { id } = req.params;
-      
+
       const customer = await storage.getCustomerById(id, userId);
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
-      
+
       res.json(customer);
     } catch (error) {
       console.error("Error fetching customer:", error);
@@ -62,7 +64,7 @@ export async function registerRoutes(
   app.post("/api/customers", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      
+
       // Validate request body
       const validationResult = insertCustomerSchema.safeParse(req.body);
       if (!validationResult.success) {
